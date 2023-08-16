@@ -1,0 +1,33 @@
+Zinnia Nie (zznie)
+Sherry Wong (bwong24)
+Use this file to explain how your sploit5 works.
+
+This sploit makes use of the snprintf in the target to exploit the format string vulnerability.
+With the use of carefully placed addresses, %x with offsets, and %n, we can overwrite any location
+we want in memory.
+
+To do this exploit, I first followed a tutorial teaching how to overwrite __DTOR_END__ using a 
+format string and gdb. When I successfully overwrote that address, I began adding my shellcode, 
+but the shell wouldn't show up no matter what.
+
+So I changed my approach and went back to my tried and true method of overwriting the location 
+of the saved return address.
+
+In gdb, I found that %ebp was at 0xbffffc98, so the saved return is at ebp+4=0xbffffc9c. 
+Then the beginning of buf is at address 0xbffffab8. 
+In order to jump over the long exploit string into the NOP sled and then the shellcode, I 
+decided on the jump address of 0xbffffbc1, which is well into the NOP sled. 
+Then, using the method described in the tutorial, I used gdb and the commands:
+
+  // r $(printf "\x9c\xfc\xff\xbfJUNK\x9d\xfc\xff\xbfJUNK\x9e\xfc\xff\xbf")%X%X%162X%n%67X%n%48900x%n
+  // x/10x 0xbffffc9c
+
+to find the correct offsets in my format string to write the address I wanted into 0xbffffc9c.
+
+Thus, my exploit string looked like this:
+Begin with each byte location of the return addr location, then NOP sled, then shellcode, finally end 
+with format string "%X%X%162X%n%67X%n%48900x%n".
+
+This completed the exploit.
+
+References: https://www.exploit-db.com/docs/english/28476-linux-format-string-exploitation.pdf

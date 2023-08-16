@@ -1,0 +1,101 @@
+# Part A:
+
+## Recovered password
+User bjacobson has password "22005597"
+User ceccio has password "02361267"
+
+## Pseudocode for attack
+My program is a brute force attack that iterates through numeric passwords of length 8 and hashing it 
+with sha256 until finding a result hash that matches the given hash.
+
+counter = 0
+while hash match is not found:
+    pad counter value with 0 until length of password
+    format input string as "username,test_password,salt"
+    get the hash result
+    if the hashed password == given hash:
+        return the padded counter value
+    counter++
+
+## Worst case running time
+Worst case runtime would occur when the correct password is the last one tried. In the case of my 
+iterative algorithm, that would occur if the password was 99999999. At that point, the algorithm
+will have tried 10^n passwords, where n is password length. 
+The hashing function is constant time O(1), so the number of iterations is the part that matters 
+for the runtime. 
+Thus worst-case asymptotic runtime is O(10^n), where n is password length.
+
+## Discussion of current proposal and suggestions for improvement
+The current proposal is good in the fact that it uses a salt. This means that password frequency in the 
+password database cannot be found out since each password is appended with a different random value.
+If 2 passwords are the same, the different salts will make their hashes appear different.
+However, since hash functions are very fast, it is easy to brute for check every single password
+until the correct one is found, like what my program did.
+Therefore, an improvement would be to slow down the hash function. Instead of hashlib.sha256, 
+hashlib.scrypt is a better hash function to use since it also uses memory, a costly resource, to slow
+down the hashing, making brute force password cracking difficult. 
+Another function that could be used is Argon2.
+
+# Part B:
+
+## Discussion of the current scheme
+The current scheme uses encrypt-and-MAC, which is not secure. 
+
+See line 35 of badencrypt.py:
+    tag = hashlib.sha256(message.encode()).hexdigest()
+
+Notice that the plaintext message is what's used to generate the tag, rather 
+than the encrypted cyphertext. Thus the message tag can be forged because it 
+does not require a key to create.
+
+## Suggestions for improving the scheme
+Use encrypt-then-MAC, which is secure.
+
+Change line 35 of badencrypt.py to use the ciphertext:
+    tag = hashlib.sha256(ciphertext.encode()).hexdigest()
+
+Notice that we use the ciphertext to generate the tag, rather than the plaintext.
+With this change, you need the key to create a valid tag. This way, an attacker 
+with no knowledge of the key (like in this case) cannot forge a new tag.
+
+# Part C:
+
+## Secret code
+"3df46BC6-6e5a9f8c" was one of the secret codes I recieved.
+Other codes recieved: "eAFFf5d3-cee1b20a", "86b4e9AF-dccbfb65", "2dd86C24-f913262b"
+
+## Explanation
+I act as the client side of the Diffie-Hellman Exchange procedure. First, I generate a secret key, x,
+using the cryptography module. From that secret key, I create a public key g^x. Then I encode that key 
+in base64 and send it through a HTTP GET request to the secret server, http://128.105.19.18:8080/dh.
+The HTTP GET request will then send back a response that is a JSON object with 'c', a message 
+encrypted with the shared key that contains the secret code, and 'gy', the public key for the server.
+From the public key, I can get the shared key g^xy which will be used to decrypt the message 'c' 
+and get the message and secret code. Finally, one more get request is sent to the server at 
+http://128.105.19.18:8080/verify with the secret code. The response is then whether the secret
+code is valid or not. 
+
+# Extra Credit:
+
+## Password 
+Username bucky has password "Cheeseisgood!"
+
+## Pseudocode for attack
+My algorithm iterates through CrackStation's human password list, encrypts each one using scrypt, 
+and compares the resulting hash with the given challenge hash. My method is quite brute force, so 
+it takes about 15 minutes to find the correct password on my device. I tried to speed it up by 
+processing the passwords as I read them to remove passwords that don't fit the requirements, like
+having less than 6 characters, having no letters, and having only letters, which are all invalid
+passwords by our requirements. Another way to speed up the search would be to parallelize the process 
+using threads or a process pool.
+
+for each password in a given list of passwords: 
+    if the password doesn't match specifications:
+        continue
+    format test input string as "{username},{password}".encode()
+    format salt as "{salt}".encode()
+    get hash result using hashlib.scrypt
+    get the hash.hex() output
+    if output == given hash:
+        return the password
+

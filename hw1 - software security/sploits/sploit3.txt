@@ -1,0 +1,20 @@
+Zinnia Nie (zznie)
+Sherry Wong (bwong24)
+Use this file to explain how your sploit3 works.
+
+Target bug:
+There is an integer overflow vulnerability in the if (count < MAX_WIDGETS) statement. By passing in an overflowed integer to count, I can pass in a negative number to the memcopy and copy an arbitrary string to the widget buffer in target3.
+
+How I exploit it:
+Using the input format arg[1] = [count],[data]
+We use [count] = an overflowed integer and
+[data] = some bufferoverflow (details below)
+
+[count] contents
+I choose [count]=-2740 since the target3 buffer is 165*4=2640 bytes.
+I choose a slightly larger buffer according to the advice from the Aleph reading (hence 2640+100=2760), then negate it so we can achieve the integer overflow.
+
+[data] contents (in order)
+1. first half: a nop sled of length X
+2. middle: the shell code (provided)
+3. second half: sp-repeat with the anticipated position of the buffer.

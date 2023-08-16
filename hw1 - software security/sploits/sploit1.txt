@@ -1,0 +1,10 @@
+Zinnia Nie (zznie)
+Sherry Wong (bwong24)
+
+This is a buffer overflow problem very similar to the one demo’d for this homework.
+Stack pointer (ESP) in the /tmp directory is 0xbffff884.
+The address of the out variable we are strcpy()’ing to is 0xbffff674.
+Since the difference between these two addresses is about ~0x200, that was my starting offset for the NOP sled.
+The size of the buffer is 180 characters so we start our NOP sled with a size of 90 bytes and go up from there. After some trial and error we get a success with a NOP sled of 107 bytes.
+Thus the format of our string (in perl) is: (perl -e 'print "\x90"x107'; cat shellcode sp-repeat)
+

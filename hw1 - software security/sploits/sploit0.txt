@@ -1,0 +1,15 @@
+Zinnia Nie (zznie)
+Sherry Wong (bwong24)
+Use this file to explain how your sploit0 works.
+
+In this sploit, we wanted to always output "Grade = A". 
+The strategy I used was to alter the return address so that the next instruction executed is 
+exactly the line where the variable grade is set to "A" and thus the outputted line which uses
+the grade variable will always print "A". 
+The function in target0 uses a buffer of size 25 with strcpy, so I could overflow the buffer and
+overwrite the return address. 
+Using disassemble, I found the line I wanted to start execution at was 0x0804851b. 
+Also, the variable is altered based off of %ebp, but that is stored before the return 
+address and thus would be overwritten by my buffer overflow. So I also had to keep that value by 
+using it in my overflow string, which was 0xbffffdf8. 
+Then I began the string with just enough NOPs to slide directly to the ebp and return address.

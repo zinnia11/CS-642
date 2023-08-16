@@ -1,0 +1,3 @@
+PersonID#Password#Salt#Username#Token#Zoobars#Profile
+inc#str#str#str#str#int#str
+#####10#

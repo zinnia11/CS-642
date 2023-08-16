@@ -1,0 +1,55 @@
+Zinnia Nie (zznie)
+Sherry Wong (bwong24)
+Use this file to explain how your sploit4 works.
+
+The memory management functions are in tmalloc.c. Here we can understand a little about how 
+talloc() and tfree() work and how memory is structured. First the first 8 bytes in an alloced
+block is the header, and in a free block those same bytes are the left pointer and right pointer 
+to other free blocks in that order. The free bit is the least significant bit in the right pointer.
+
+Looking at the code of target4.c, there is a double free of q, so that is the vulnerability we
+will be exploiting. 
+q is the memory block of interest, so we will be examining tfree() with that scenario in mind.  
+Here is the code of interest:
+
+  q = p->s.l;
+  if (q != NULL && GET_FREEBIT(q)) /* try to consolidate leftward */
+    {
+      CLR_FREEBIT(q);
+      q->s.r      = p->s.r;
+      p->s.r->s.l = q;
+      SET_FREEBIT(q);
+      p = q;
+    }
+
+Basically, wherever p->s.r points to, that memory location will be interpreted as another CHUNK struct, 
+and s.l, which is what the code is trying to change, is the first thing stored in that struct, 
+so that memory location will then contain wherever q is.
+If the right pointer of p (which would be q in our actual code) in the code above points somewhere like
+the location of the return address, then we can overwrite the return address with the address of 
+q (actually p), which is the address of the code we want executed.
+
+Therefore, we want the block q to have s.l equal the beginning of the new p buffer, since q in the code
+above would then equal that address, and we want the s.r in block q to be the location of the saved
+return address. Then we also want the new p buffer to have an s.r that indicates it is free.
+Then, the code above executes as such:
+1. First, q = the beginning of the new p buffer, since that is what we overwrote the q block to be (p->s.l). 
+2. Because that block was indicated as free, the merge code begins. 
+3. The new p buffer->s.r will be equal to the p=q->s.r, but that doesn't really matter. 
+4. Then because the p=q->s.r is equal to the saved return address, changing the value of p=qq->s.r->s.l
+will actually overwrite it with q = new p buffer. 
+
+After the first two tallocs p = 0x8059b48 and q = 0x8059a78. Then both are freed and merged together.
+p is talloced again to get a new address of 0x8059478. This is thus where the buffer we can manipulate
+and exploit resides.
+ebp = 0xbffff878, thus the return address will be at ebp+4 = 0xbffff87c.
+q and new p are 0x8059a78 - 0x8059478 = 1536 bytes apart. Subtract 8 because the pointer of q will
+be after the header block where left and right pointers are stored to get 1528 bytes. 
+
+So we can write the 2048 byte buffer as such: The first two bytes are NOPs, then followed by a JMP 
+instruction (0xeb), in order to skip the next 4 bytes which will be used to indicate the block as free.
+Then a series of NOPs and the shell code is in the next 1526 bytes. The s.l of q resides at byte 1528,
+so that will be overwritten with the address of the beginning of the buffer, 0x8059478. 4 bytes after
+is the s.r of q which will contain the return address location, 0xbffff674. 
+
+Now our sploit is complete.
